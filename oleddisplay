@@ -32,45 +32,14 @@ int blinkState = 0;
 int blinkDelay = 2500;
 unsigned long lastBlinkTime = 0;
 
-// ================= OLED AUTO-RECONNECT =================
-bool oledReady = false;
-
-// ------------------------------------------------------
-
-bool oledConnected() {
-  Wire.beginTransmission(0x3C);
-  return (Wire.endTransmission() == 0);
-}
-
-void initOLED() {
+void setup() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
   display.display();
-  oledReady = true;
-}
-
-// ------------------------------------------------------
-
-void setup() {
   Wire.begin();
-  delay(200);
 }
-
-// ------------------------------------------------------
 
 void loop() {
-
-  // ===== OLED AUTO RECONNECT (TANPA UBAH EKSPRESI) =====
-  if (!oledConnected()) {
-    oledReady = false;   // OLED mati / dicabut
-    delay(200);
-    return;              // hentikan gambar
-  }
-
-  if (!oledReady) {
-    initOLED();          // OLED nyala lagi → init ulang
-  }
-
   unsigned long now = millis();
 
   // ---------- BLINK ----------
@@ -96,18 +65,18 @@ void loop() {
 
   display.clearDisplay();
 
+  // ---------- TEXT POJOK ATAS ----------
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0,0);
+  display.print("tch.tzy");
+
   // ---------- LEFT EYE ----------
   if (blinkState == 0) {
     drawHappyEye(leftEyeX, eyeY);
     drawPupil(leftEyeX, eyeY);
   } else {
-    display.fillRect(
-      leftEyeX,
-      eyeY + eyeHeight / 2 - 2,
-      eyeWidth,
-      4,
-      WHITE
-    );
+    display.fillRect(leftEyeX, eyeY + eyeHeight / 2 - 2, eyeWidth, 4, WHITE);
   }
 
   // ---------- RIGHT EYE ----------
@@ -115,13 +84,7 @@ void loop() {
     drawHappyEye(rightEyeX, eyeY);
     drawPupil(rightEyeX, eyeY);
   } else {
-    display.fillRect(
-      rightEyeX,
-      eyeY + eyeHeight / 2 - 2,
-      eyeWidth,
-      4,
-      WHITE
-    );
+    display.fillRect(rightEyeX, eyeY + eyeHeight / 2 - 2, eyeWidth, 4, WHITE);
   }
 
   // ---------- SMILE ----------
@@ -133,33 +96,15 @@ void loop() {
 
 // ================= HAPPY EYE (FULL WHITE) =================
 void drawHappyEye(int x, int y) {
-  // kelopak mata full putih
   display.fillRoundRect(x, y, eyeWidth, eyeHeight, 6, WHITE);
-
-  // potong bagian bawah → efek mata senyum
-  display.fillRect(
-    x,
-    y + eyeHeight / 2 + 2,
-    eyeWidth,
-    eyeHeight / 2,
-    BLACK
-  );
-
-  display.fillRoundRect(
-    x,
-    y + eyeHeight / 2,
-    eyeWidth,
-    eyeHeight / 2,
-    6,
-    WHITE
-  );
+  display.fillRect(x, y + eyeHeight / 2 + 2, eyeWidth, eyeHeight / 2, BLACK);
+  display.fillRoundRect(x, y + eyeHeight / 2, eyeWidth, eyeHeight / 2, 6, WHITE);
 }
 
 // ================= PUPIL =================
 void drawPupil(int x, int y) {
   int centerX = x + eyeWidth / 2 + pupilOffsetX;
   int centerY = y + eyeHeight / 2 + pupilOffsetY;
-
   display.fillCircle(centerX, centerY, pupilSize, BLACK);
 }
 
