@@ -1,0 +1,172 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// ================= EYE POSITION & SIZE =================
+int leftEyeX  = 42;
+int rightEyeX = 78;
+int eyeY      = 20;
+
+int eyeWidth  = 28;
+int eyeHeight = 16;
+
+// ================= EYEBALL =================
+int pupilSize = 5;
+int pupilOffsetX = 0;
+int pupilOffsetY = 0;
+int targetPupilX = 0;
+int targetPupilY = 0;
+
+// ================= MOVEMENT =================
+int moveSpeed = 6;
+unsigned long moveTime = 0;
+
+// ================= BLINK =================
+int blinkState = 0;
+int blinkDelay = 2500;
+unsigned long lastBlinkTime = 0;
+
+// ================= OLED AUTO-RECONNECT =================
+bool oledReady = false;
+
+// ------------------------------------------------------
+
+bool oledConnected() {
+  Wire.beginTransmission(0x3C);
+  return (Wire.endTransmission() == 0);
+}
+
+void initOLED() {
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.display();
+  oledReady = true;
+}
+
+// ------------------------------------------------------
+
+void setup() {
+  Wire.begin();
+  delay(200);
+}
+
+// ------------------------------------------------------
+
+void loop() {
+
+  // ===== OLED AUTO RECONNECT (TANPA UBAH EKSPRESI) =====
+  if (!oledConnected()) {
+    oledReady = false;   // OLED mati / dicabut
+    delay(200);
+    return;              // hentikan gambar
+  }
+
+  if (!oledReady) {
+    initOLED();          // OLED nyala lagi → init ulang
+  }
+
+  unsigned long now = millis();
+
+  // ---------- BLINK ----------
+  if (now - lastBlinkTime > blinkDelay && blinkState == 0) {
+    blinkState = 1;
+    lastBlinkTime = now;
+  } 
+  else if (now - lastBlinkTime > 120 && blinkState == 1) {
+    blinkState = 0;
+    lastBlinkTime = now;
+  }
+
+  // ---------- RANDOM EYEBALL TARGET ----------
+  if (now - moveTime > 2000) {
+    targetPupilX = random(-4, 5);
+    targetPupilY = random(-2, 3);
+    moveTime = now;
+  }
+
+  // ---------- SMOOTH EYEBALL MOVEMENT ----------
+  pupilOffsetX += (targetPupilX - pupilOffsetX) / moveSpeed;
+  pupilOffsetY += (targetPupilY - pupilOffsetY) / moveSpeed;
+
+  display.clearDisplay();
+
+  // ---------- LEFT EYE ----------
+  if (blinkState == 0) {
+    drawHappyEye(leftEyeX, eyeY);
+    drawPupil(leftEyeX, eyeY);
+  } else {
+    display.fillRect(
+      leftEyeX,
+      eyeY + eyeHeight / 2 - 2,
+      eyeWidth,
+      4,
+      WHITE
+    );
+  }
+
+  // ---------- RIGHT EYE ----------
+  if (blinkState == 0) {
+    drawHappyEye(rightEyeX, eyeY);
+    drawPupil(rightEyeX, eyeY);
+  } else {
+    display.fillRect(
+      rightEyeX,
+      eyeY + eyeHeight / 2 - 2,
+      eyeWidth,
+      4,
+      WHITE
+    );
+  }
+
+  // ---------- SMILE ----------
+  drawSmile(64, eyeY + eyeHeight + 22);
+
+  display.display();
+  delay(30);
+}
+
+// ================= HAPPY EYE (FULL WHITE) =================
+void drawHappyEye(int x, int y) {
+  // kelopak mata full putih
+  display.fillRoundRect(x, y, eyeWidth, eyeHeight, 6, WHITE);
+
+  // potong bagian bawah → efek mata senyum
+  display.fillRect(
+    x,
+    y + eyeHeight / 2 + 2,
+    eyeWidth,
+    eyeHeight / 2,
+    BLACK
+  );
+
+  display.fillRoundRect(
+    x,
+    y + eyeHeight / 2,
+    eyeWidth,
+    eyeHeight / 2,
+    6,
+    WHITE
+  );
+}
+
+// ================= PUPIL =================
+void drawPupil(int x, int y) {
+  int centerX = x + eyeWidth / 2 + pupilOffsetX;
+  int centerY = y + eyeHeight / 2 + pupilOffsetY;
+
+  display.fillCircle(centerX, centerY, pupilSize, BLACK);
+}
+
+// ================= SMILE =================
+void drawSmile(int centerX, int y) {
+  display.drawLine(centerX - 20, y,     centerX - 10, y + 5, WHITE);
+  display.drawLine(centerX - 10, y + 5, centerX,      y + 8, WHITE);
+  display.drawLine(centerX,      y + 8, centerX + 10, y + 5, WHITE);
+  display.drawLine(centerX + 10, y + 5, centerX + 20, y,     WHITE);
+}
