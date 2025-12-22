@@ -1,0 +1,125 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// ================= LCD =================
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+bool lcdReady = false;
+
+// ================= CEK LCD =================
+bool lcdConnected() {
+  Wire.beginTransmission(0x27);
+  return (Wire.endTransmission() == 0);
+}
+
+// ================= INIT LCD =================
+void initLCD() {
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("WELCOME TO ");
+
+  lcd.setCursor(0, 1);
+  lcd.print("GITHUB RADUOLA");
+
+  lcdReady = true;
+}
+
+// ================= MOTOR =================
+// Pin motor kiri
+int IN1 = 11;
+int IN2 = 12;
+int ENA = 5;
+
+// Pin motor kanan
+int IN3 = 13;
+int IN4 = 10;
+int ENB = 6;
+
+char cmd;
+
+// ================= SETUP =================
+void setup() {
+  Wire.begin(); // SDA/SCL default Arduino
+  delay(200);
+
+  // Inisialisasi LCD
+  if (lcdConnected()) {
+    initLCD();
+  }
+
+  // Serial motor
+  Serial.begin(9600);
+
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+
+  analogWrite(ENA, 255);
+  analogWrite(ENB, 255);
+
+  stopCar();
+}
+
+// ================= LOOP =================
+void loop() {
+  // ===== LCD AUTO RECONNECT =====
+  if (!lcdConnected()) {
+    lcdReady = false;
+  } else if (!lcdReady) {
+    initLCD();
+  }
+
+  // ===== MOTOR CONTROL VIA SERIAL =====
+  if (Serial.available()) {
+    cmd = Serial.read();
+
+    switch (cmd) {
+      case 'F': forward(); break;
+      case 'B': backward(); break;
+      case 'L': left(); break;
+      case 'R': right(); break;
+      default: stopCar(); break;
+    }
+  }
+}
+
+// ================= MOTOR FUNCTIONS =================
+void forward() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void backward() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+
+void left() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, HIGH);
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
+}
+
+void right() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, HIGH);
+}
+
+void stopCar() {
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);
+  digitalWrite(IN4, LOW);
+}
