@@ -1,0 +1,55 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// ================= I2C PIN CUSTOM =================
+#define SDA_PIN 19
+#define SCL_PIN 18
+
+// ================= LCD =================
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+bool lcdReady = false;
+
+// ================= CEK LCD =================
+bool lcdConnected() {
+  Wire.beginTransmission(0x27);
+  return (Wire.endTransmission() == 0);
+}
+
+// ================= INIT LCD =================
+void initLCD() {
+  lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("WELCOME TO ");
+
+  lcd.setCursor(0, 1);
+  lcd.print("GITHUB RADUOLA");
+
+  lcdReady = true;
+}
+
+// ================= SETUP =================
+void setup() {
+  Wire.begin(SDA_PIN, SCL_PIN); // SDA, SCL custom
+  delay(200);
+}
+
+// ================= LOOP =================
+void loop() {
+
+  // LCD dicabut
+  if (!lcdConnected()) {
+    lcdReady = false;
+    delay(200);
+    return;
+  }
+
+  // LCD dipasang lagi
+  if (!lcdReady) {
+    initLCD();
+  }
+
+  // tidak ada kontrol apa pun
+}
